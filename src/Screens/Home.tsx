@@ -1,12 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  View,
-  AppState,
-  TouchableOpacity,
-} from 'react-native';
+import {StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import dynamicLinks, {
   FirebaseDynamicLinksTypes,
 } from '@react-native-firebase/dynamic-links';
@@ -20,9 +13,6 @@ enum TokenStorageOperation {
 }
 
 const HomeComponent: React.FC<any> = ({navigation}) => {
-  const appState = useRef(AppState.currentState);
-  const [, setAppStateVisible] = useState(appState.current);
-
   const authenticated = useRef<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState(authenticated.current);
 
@@ -40,49 +30,53 @@ const HomeComponent: React.FC<any> = ({navigation}) => {
     }
   };
 
+  const navigateUser = () => {
+    setTimeout(() => {
+      if (authenticated.current) {
+        navigation.navigate(NavigationScreens.Next);
+      }
+      if (!authenticated.current) {
+        navigation.navigate(NavigationScreens.Login);
+      }
+    }, 1000);
+  };
+
+  // Handle dynamic link inside your own application
   const handleDynamicLink = (link: FirebaseDynamicLinksTypes.DynamicLink) => {
-    // Handle dynamic link inside your own application
     console.log(link, 'this is dynamic link');
-    if (link.url === 'https://deeeplinktestvdv.page.link/bjYi') {
-      Alert.alert(`Opened this dynamic link ${link.url}`);
+    if (link.url === 'https://google.com') {
+      navigateUser();
     }
   };
 
-  useEffect(() => {
-    dynamicLinks().onLink(handleDynamicLink);
-  }, []);
+  // const buildLink = async () => {
+  //   const link = await dynamicLinks().buildLink({
+  //     link: 'https://deeplinktest.psegtest.io',
+  //     // domainUriPrefix is created in your Firebase console
+  //     domainUriPrefix: 'https://deeeplinktestvdv.page.link',
+  //     // optional setup which updates Firebase analytics campaign
+  //     // "banner". This also needs setting up before hand
+  //     analytics: {
+  //       campaign: 'psegtest',
+  //     },
+  //   });
+
+  //   console.log(link, 'built link');
+  //   return link;
+  // };
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      // console.log(appStateVisible, 'appStateVisible', authenticated.current);
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        console.log('App has come to the foreground!');
-        // Alert.alert(
-        //   authenticated.current
-        //     ? 'You are authenticated, will navigate to next screen !'
-        //     : 'You are not authenticated, will navigate to login screen !',
-        // );
-        setTimeout(() => {
-          if (authenticated.current) {
-            navigation.navigate(NavigationScreens.Next);
-          }
-          if (!authenticated.current) {
-            navigation.navigate(NavigationScreens.Login);
-          }
-        }, 2000);
-      }
+    const unsubscribe = dynamicLinks().onLink(handleDynamicLink);
 
-      appState.current = nextAppState;
-      setAppStateVisible(appState.current);
-      // console.log('AppState', appState.current);
-    });
+    dynamicLinks()
+      .getInitialLink()
+      .then(link => {
+        if (link?.url === 'https://google.com') {
+          navigateUser();
+        }
+      });
 
-    return () => {
-      subscription.remove();
-    };
+    return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -100,7 +94,7 @@ const HomeComponent: React.FC<any> = ({navigation}) => {
       <TouchableOpacity
         style={styles.button}
         onPress={() => handleTokenStorage(TokenStorageOperation.Unset)}>
-        <Text style={styles.textWhite}>De-Authenticate</Text>
+        <Text style={styles.textWhite}>Log Out</Text>
       </TouchableOpacity>
     </View>
   );
